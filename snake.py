@@ -14,6 +14,7 @@ class Snake(object):
         self.head_x = 5
         self.head_y = 5
         self.tail = []
+        self.crashed = 0
 
         for i in range(1, BASE_LENGTH):
             self.tail.append([self.head_y-i, self.head_x])
@@ -65,13 +66,15 @@ class Snake(object):
 
     def update(self):
         last_coord = [self.head_y, self.head_x]
-
-
+        if last_coord in self.tail:
+            self.crashed = 1
+            print('crashed')
         self.direction_map[self.direction]()
         for i in range(len(self.tail)):
             (last_coord[0], last_coord[1]), (self.tail[i][0], self.tail[i][1]) = (self.tail[i][0], self.tail[i][1]), (last_coord[0], last_coord[1])
 
         self.tail_end = [last_coord[0], last_coord[1]]
+
 
 class Food(object):
     def __init__(self, window, char='Q'):
@@ -127,5 +130,14 @@ while exit == 0:
         snake.change_direction(event)
 
     snake.update()
+
+    if snake.crashed==1 :
+        print('chrr')
+        window.clear()
+        window.addstr(int(HEIGHT/2), int(WIDTH/2), 'You lost')
+        window.border(0)
+        key = -1
+        while key != 27 and key != 137:
+            key = window.getch()
 
 curses.endwin()
