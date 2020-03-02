@@ -4,8 +4,8 @@ from random import randint
 
 HEIGHT = 25
 WIDTH  = 35
-TIMEOUT = 1000
 BASE_LENGTH = 3
+TIMEOUT = 100
 
 class Snake(object):
     def __init__(self, windows):
@@ -18,10 +18,10 @@ class Snake(object):
 
         for i in range(1, BASE_LENGTH):
             self.tail.append([self.head_y-i, self.head_x])
-        print(self.tail)
+
         self.tail_end = self.tail[-1]
         self.score = 0
-        self.window = window
+        self.window = windows
         self.direction = KEY_RIGHT
         self.direction_map = {
             KEY_UP: self.move_up,
@@ -36,10 +36,10 @@ class Snake(object):
         for (x,y) in self.tail:
             self.window.addstr(y, x, self.tail_char)
 
-    def eat_food(self):
+    def eat_food(self, window):
         self.score+=1
         self.tail.append(self.tail_end)
-        print(self.tail)
+        self.window.timeout(TIMEOUT - 3 * self.score)
 
     def move_up(self):
         self.head_x -= 1
@@ -68,7 +68,7 @@ class Snake(object):
         last_coord = [self.head_y, self.head_x]
         if last_coord in self.tail:
             self.crashed = 1
-            print('crashed')
+
         self.direction_map[self.direction]()
         for i in range(len(self.tail)):
             (last_coord[0], last_coord[1]), (self.tail[i][0], self.tail[i][1]) = (self.tail[i][0], self.tail[i][1]), (last_coord[0], last_coord[1])
@@ -89,55 +89,71 @@ class Food(object):
     def delete(self, window):
         self.window.delch(self.y, self.x)
 
-curses.initscr()
-window = curses.newwin(HEIGHT, WIDTH, 0, 0)
-window.timeout(TIMEOUT)
-window.keypad(1)
-curses.noecho()
-curses.curs_set(0)
-window.border(0)
-exit = 0
-snake = Snake(window)
-food = Food(window)
+class GameApp(object):
 
-while exit == 0:
-    window.clear()
-    window.border(0)
-    snake.render()
-    food.render()
-    window.addstr(0, 0, 'Score : {}'.format(snake.score))
-    event = window.getch()
+    def __init__(self):
+        curses.initscr()
+        self.window = curses.newwin(HEIGHT, WIDTH, 0, 0)
+        self.window.keypad(1)
+        self.window.timeout(TIMEOUT)
+        curses.noecho()
+        curses.curs_set(0)
+        self.window.border(0)
+        self.exit = 0
+        self.snake = Snake(self.window)
+        self.food = Food(self.window)
+        self.running()
 
-    if event == 27:
-        window.clear()
-        window.addstr(0, 0, 'Game exited. Press space to restart or q to exit program')
-        key = -1
-        while key != 27 and key != 137:
-            key = window.getch()
+    def running(self):
+        while self.exit == 0:
+            self.window.clear()
+            self.window.border(0)
+            self.snake.render()
+            self.food.render()
+            self.window.addstr(0, 0, 'Score : {}'.format(self.snake.score))
+            self.event = self.window.getch()
 
-        if key == 137:
-            exit = 1
+            if self.event == 27:
+                self.window.clear()
+                self.window.addstr(0, 0, 'Game exited. Press space to restart or q to exit program')
+                self.key = -1
+                while self.key != 27 and self.key != 137:
+                    self.key = self.window.getch()
 
-        if key == 27:
-            #TODO Initialize game
-            exit = 1
-    if snake.head_x == food.y and snake.head_y == food.x:
-        snake.eat_food()
-        food.delete(window)
-        food = Food(window)
+                if self.key == 137:
+                    self.exiting()
+                    break
 
-    if event in [KEY_UP, KEY_DOWN, KEY_LEFT, KEY_RIGHT]:
-        snake.change_direction(event)
+                if self.key == 27:
+                    self.exiting()
+                    break
 
-    snake.update()
+            if self.snake.head_x == self.food.y and self.snake.head_y == self.food.x:
+                self.snake.eat_food(self.window)
+                self.food.delete(self.window)
+                self.food = Food(self.window)
 
-    if snake.crashed==1 :
-        print('chrr')
-        window.clear()
-        window.addstr(int(HEIGHT/2), int(WIDTH/2), 'You lost')
-        window.border(0)
-        key = -1
-        while key != 27 and key != 137:
-            key = window.getch()
+            if self.event in [KEY_UP, KEY_DOWN, KEY_LEFT, KEY_RIGHT]:
+                self.snake.change_direction(self.event)
 
-curses.endwin()
+            self.snake.update()
+
+            if self.snake.crashed==1 :
+                self.exiting()
+                break
+
+
+    def exiting(self):
+        self.window.clear()
+        self.window.addstr(int(HEIGHT/2), int(WIDTH/2) - 4 , 'You lost')
+        self.window.addstr(int(HEIGHT/2) + 1, int(WIDTH/2) - 5, 'Score : {}'.format(self.snake.score))
+        self.window.addstr(int(HEIGHT/2) + 2, int(WIDTH/2) - 8 , 'Press ESQ to quit')
+        self.window.border(0)
+        self.key = -1
+        while self.key != 27:
+            self.key = self.window.getch()
+
+        curses.endwin()
+
+
+App = GameApp()
