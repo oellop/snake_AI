@@ -90,7 +90,9 @@ Train_genetic()
 # loaded_model = model_from_json(loaded_model_json)
 #
 # loaded_model.load_weights("model.h5")
-#
+# model.compile(optimizer='adam',
+#               loss='sparse_categorical_crossentropy',
+#               metrics=['accuracy'])
 # App = GameApp(model = loaded_model)
 # App.start()
 # a = [4, 5, 1, 2, 4, 5]

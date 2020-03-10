@@ -10,7 +10,7 @@ HEIGHT = 25
 WIDTH  = 35
 WIDTH_APP = WIDTH + 20
 BASE_LENGTH = 3
-TIMEOUT = 20
+TIMEOUT = 10
 
 class Snake(object):
     def __init__(self, windows, auto = 0):
@@ -32,6 +32,7 @@ class Snake(object):
         self.count = 0
         self.dist_list = []
         self.count_score = 0
+        self.obs_wall = 0
 
         for i in range(1, BASE_LENGTH):
             self.tail.append([self.head_y-i, self.head_x])
@@ -80,22 +81,26 @@ class Snake(object):
     def move_up(self):
         self.head_x -= 1
         if self.head_x < 1:
-            self.head_x = HEIGHT - 2
+            self.obs_wall = 1
+            # self.head_x = HEIGHT - 2
 
     def move_down(self):
         self.head_x += 1
         if self.head_x > HEIGHT - 2:
-            self.head_x = 1
+            self.obs_wall = 1
+            # self.head_x = 1
 
     def move_left(self):
         self.head_y -= 1
         if self.head_y < 1:
-            self.head_y = WIDTH - 2
+            self.obs_wall = 1
+            # self.head_y = WIDTH - 2
 
     def move_right(self):
         self.head_y += 1
         if self.head_y > WIDTH - 2:
-            self.head_y = 1
+            self.obs_wall = 1
+            # self.head_y = 1
 
     def change_direction(self, dir):
         if self.direction == dir:
@@ -114,6 +119,9 @@ class Snake(object):
         if self.count_score == 60:
             self.crashed = 1
 
+        if self.obs_wall == 1:
+            self.crashed = 1
+
         last_coord = [self.head_y, self.head_x]
 
         if last_coord in self.tail:
@@ -125,6 +133,23 @@ class Snake(object):
             (last_coord[0], last_coord[1]), (self.tail[i][0], self.tail[i][1]) = (self.tail[i][0], self.tail[i][1]), (last_coord[0], last_coord[1])
 
         self.tail_end = [last_coord[0], last_coord[1]]
+
+    def collide_wall(self, x, y):
+        wall = 0
+        if x < 1:
+            wall = 1
+
+        if x > HEIGHT - 2:
+            wall = 1
+            # self.head_x = 1
+
+        if y < 1:
+            wall = 1
+
+        if y > WIDTH - 2:
+            wall = 1
+
+        return wall
 
 
     def get_input_NN(self, food):
@@ -140,12 +165,13 @@ class Snake(object):
         self.top_dist/=max_dist
         self.left_dist/=max_dist
         self.right_dist/=max_dist
+
         self.dist_list.append(min([self.down_dist, self.top_dist, self.right_dist, self.left_dist]))
 
-        self.obs_left = 1 if [self.head_y - 1, self.head_x] in self.tail else 0
-        self.obs_right = 1 if [self.head_y + 1, self.head_x] in self.tail else 0
-        self.obs_down = 1 if [self.head_y, self.head_x + 1] in self.tail else 0
-        self.obs_top = 1 if [self.head_y, self.head_x - 1] in self.tail else 0
+        self.obs_left = 1 if ([self.head_y - 1, self.head_x] in self.tail) or self.collide_wall(self.head_x, self.head_y - 1) else 0
+        self.obs_right = 1 if [self.head_y + 1, self.head_x] in self.tail or self.collide_wall(self.head_x, self.head_y + 1) else 0
+        self.obs_down = 1 if [self.head_y, self.head_x + 1] in self.tail or self.collide_wall(self.head_x + 1, self.head_y) else 0
+        self.obs_top = 1 if [self.head_y, self.head_x - 1] in self.tail or self.collide_wall(self.head_x - 1, self.head_y) else 0
 
         return self.top_dist, self.down_dist, self.right_dist, self.left_dist, self.obs_top, self.obs_down, self.obs_left, self.obs_right
 
@@ -258,5 +284,5 @@ class GameApp(object):
             self.start()
 
 # model = create_model()
-# App = GameApp(model = model, auto = 1)
+# App = GameApp( auto = 0)
 # App.start()
